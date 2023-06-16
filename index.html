@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title></title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+  <style id="compiled-css" type="text/css">
+        :root {
+      --sky-blue: #78c0e0ff;
+      --celestial-blue: #449dd1ff;
+      --persian-blue: #192bc2ff;
+      --navy-blue: #150578ff;
+      --federal-blue: #0e0e52ff;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    #inputArea {
+      border-radius: 10px;
+      padding: 10px;
+      color: white;
+    }
+
+    #jsonInput {
+      width: 100%;
+      height: 300px;
+      border: 1px solid var(--navy-blue);
+      padding: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+      color: var(--navy-blue);
+    }
+
+    #processButton {
+      display: block;
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 16px;
+      background-color: var(--persian-blue);
+      border: none;
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 12px;
+      transition-duration: 0.4s;
+    }
+
+    #processButton:hover {
+      background-color: var(--navy-blue);
+    }
+
+    table {
+      margin-bottom: 2em;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+
+    th {
+      background-color: var(--persian-blue);
+      color: white;
+    }
+
+    tr:hover {
+      background-color: var(--sky-blue);
+    }
+
+    #result {
+      display: none;
+    }
+
+    /* Responsive styles */
+    @media screen and (max-width: 600px) {
+      #jsonInput {
+        height: 200px;
+      }
+
+      table,
+      th,
+      td {
+        font-size: 0.8rem;
+      }
+
+      #processButton {
+        padding: 8px;
+        font-size: 0.9rem;
+      }
+    }
+
+  </style>
+
+
+</head>
+<body>
+    <div id="inputArea">
+  <textarea id="jsonInput" placeholder="Paste your JSON data here"></textarea>
+  <button id="processButton" onclick="processData()">Process Data</button>
+</div>
+
+
+<div id="result">
+  <h1>Note structure:</h1>
+  <table style="width:100%">
+    <tr>
+      <th>Entity</th>
+      <th>Category</th>
+      <th>Confidence Score</th>
+      <th>Medical Codes</th>
+    </tr>
+  </table>
+</div>
+
+
+    <script type="text/javascript">
+
+
+function processData() {
+  // Get the JSON data from the textarea
+  var jsonData = document.getElementById('jsonInput').value;
+
+  try {
+    // Parse the JSON data
+    var obj = JSON.parse(jsonData);
+
+    // Get the table
+    var table = document.getElementById('result').getElementsByTagName('table')[0];
+
+    // Clear previous table data
+    while (table.rows.length > 1) {
+      table.deleteRow(1);
+    }
+
+    // Map of data sources to URLs for looking up codes
+    var dataSourceUrls = {
+      'SNOMEDCT_US': 'https://browser.ihtsdotools.org/?perspective=full&conceptId1=',
+      'ICD10CM': 'https://icd10cmtool.cdc.gov/?fy=FY2023&query='
+      // Add more data sources here if needed
+    };
+
+    // Process the JSON data
+    obj.documents.forEach((doc) => {
+      doc.entities.forEach((entity) => {
+        // Create a new row
+        var row = table.insertRow();
+
+        // Add cells to the row
+        var cell1 = row.insertCell();
+        var cell2 = row.insertCell();
+        var cell3 = row.insertCell();
+        var cell4 = row.insertCell();
+
+        // Set the cell values
+        cell1.innerHTML = entity.text;
+        cell2.innerHTML = entity.category;
+        cell3.innerHTML = entity.confidenceScore;
+
+        // Process medical codes if they exist
+        if (entity.links) {
+          var codes = entity.links.map(link => {
+            var code = link.dataSource + ": " + link.id;
+            var url = dataSourceUrls[link.dataSource];
+            if (url) {
+              // If a URL for this data source exists, make the code a clickable link
+              // Also, make the code bold if it's SNOMEDCT_US or ICD10CM
+              var fontWeight = (link.dataSource === 'SNOMEDCT_US' || link.dataSource === 'ICD10CM') ? 'bold' : 'normal';
+              return `<a href="${url}${link.id}" target="_blank" style="font-weight: ${fontWeight};">${code}</a>`;
+            } else {
+              // Otherwise, just display the code as text
+              return code;
+            }
+          }).join('<br>');
+          cell4.innerHTML = codes;
+        } else {
+          cell4.innerHTML = 'N/A';
+        }
+      });
+    });
+
+    // Hide input area and show results
+    document.getElementById('inputArea').style.display = 'none';
+    document.getElementById('result').style.display = 'block';
+  } catch (e) {
+    // If an error occurred (e.g., the JSON was invalid), alert the user
+    alert('Invalid JSON data: ' + e.message);
+  }
+}
+
+
+</script>
+</body>
+</html>
