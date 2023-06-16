@@ -23,6 +23,12 @@
       font-family: Arial, sans-serif;
     }
 
+    h1,
+    h2 {
+      color: var(--persian-blue);
+      margin: 20px 0;
+    }
+
     #inputArea {
       border-radius: 10px;
       padding: 10px;
@@ -138,6 +144,12 @@ function processData() {
     // Parse the JSON data
     var obj = JSON.parse(jsonData);
 
+    // Variables to hold the age, gender, and diagnoses
+    var age = null;
+    var gender = null;
+    var diagnoses = new Set();
+
+
     // Get the table
     var table = document.getElementById('result').getElementsByTagName('table')[0];
 
@@ -189,16 +201,55 @@ function processData() {
         } else {
           cell4.innerHTML = 'N/A';
         }
+        // Check if this entity is an age, gender, or diagnosis and store it
+        if (entity.category === 'Age') {
+          age = entity.text;
+        } else if (entity.category === 'Gender') {
+          gender = entity.text;
+        } else if (entity.category === 'Diagnosis') {
+          diagnoses.add(entity.text);
+        }
       });
     });
 
     // Hide input area and show results
     document.getElementById('inputArea').style.display = 'none';
     document.getElementById('result').style.display = 'block';
+
+    // Convert diagnoses array to a string
+    diagnoses = removeUnwantedDiagnoses(diagnoses);
+    var diagnosesStr = Array.from(diagnoses).join(', ');
+
+    // Create the summary
+    var summary = '';
+    if (age) summary += age + " ";
+    if (gender) summary += gender + " ";
+    if (age || gender) summary += "with ";
+    if (diagnosesStr) summary += diagnosesStr;
+
+    // Clear previous summary if exists
+    var oldSummary = document.getElementById('summary');
+    if (oldSummary) {
+      document.body.removeChild(oldSummary);
+    }
+
+    // Inserting the summary at the top of the page
+    var summaryElement = document.createElement('h1');
+    summaryElement.id = 'summary';
+    summaryElement.textContent = summary;
+    document.body.insertBefore(summaryElement, document.body.firstChild);
+
   } catch (e) {
     // If an error occurred (e.g., the JSON was invalid), alert the user
     alert('Invalid JSON data: ' + e.message);
   }
+}
+
+function removeUnwantedDiagnoses(diagnoses) {
+  diagnoses.delete("illnesses");
+  //diagnoses.delete("otherDiagnosisToExclude");
+  // Add more diagnoses to exclude as needed
+  return diagnoses;
 }
 
 
